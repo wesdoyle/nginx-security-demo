@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: coursedb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  api:
+    build: ./api
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://user:password@db/coursedb
+    ports:
+      - "8080:8080"
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

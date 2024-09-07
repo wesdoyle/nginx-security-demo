@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: coursedb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+  api:
+    build: ./api
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://user:password@db/coursedb
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+  nginx:
+    build: 
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d/modsecurity.conf:/etc/nginx/modsecurity/modsecurity.conf:ro
+      - ./nginx/conf.d/main.conf:/etc/nginx/modsecurity/main.conf:ro
+    depends_on:
+      - api
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
