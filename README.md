@@ -457,7 +457,7 @@ limit_conn_zone $binary_remote_addr zone=addr:10m;
 
 `limit_conn_zone`: Creates a shared memory zone named `addr` of 10 megabytes to track the number of simultaneous connections for each client IP.
 
-***`limit_req` and `limit_conn:`**
+**`limit_req` and `limit_conn:`**
 
 These directives apply the rate and connection limits defined above:
 
