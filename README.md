@@ -99,7 +99,7 @@ When the containers are ready, you can query the API on `localhost` using a brow
 
 However, the API currently exposes a SQL injection vulnerability.
 
-A malicious actor can exploit the injection vulnerabilty. They might begin by constructing a query to return metadata about the database, after exploring the output of the API and discovering that it is very poorly designed.  After some exploration, they graft a PostgreSQL `VERSION()` call using a union in order to conform to the inferred shape of the table the application is querying: 
+A malicious actor can exploit the injection vulnerabilty. The attacker might begin by constructing a query to return metadata about the database, after exploring the output of the API and discovering that it is very poorly designed.  After some exploration, they graft a PostgreSQL `VERSION()` call using a union in order to conform to the inferred shape of the table the application is querying: 
 (`http://localhost/search?prefix=Intro' UNION SELECT 1, VERSION(), NULL, NULL--`):
 
 ```sh
@@ -473,11 +473,74 @@ limit_conn addr 10;
 `limit_req`: Enforces the rate limit from the `one` zone, allowing a burst of up to 5 extra requests.
 `limit_conn`: Limits each client IP to a maximum of 10 simultaneous connections in the `addr` zone.
 
-## Phase 5: Adding a WAF
+## Phase 5: Adding a Web Application Firewall (WAF)
 
-This phase incorporates a Web Application Firewall (WAF):
+This phase incorporates ModSecurity, a powerful open-source Web Application Firewall (WAF), into our Nginx setup. A WAF adds an extra layer of security by inspecting incoming HTTP traffic and blocking potential attacks before they reach your application.
+
 - Integrates ModSecurity with Nginx
 - Configures basic ModSecurity rules to protect against common web attacks
 
-This shows how a WAF can provide an additional layer of security 
-for web applications.
+### Key Components:
+
+1. **ModSecurity Integration**: 
+   - The Nginx Dockerfile has been updated to include ModSecurity compilation and installation. This process is a bit complex, as at the time of writing, it includes building the project from source.  For this demo, we're using a Debian Bullseye Slim base image.
+    
+   - The `load_module` directive in `nginx.conf` enables the ModSecurity module.
+
+2. **Configuration Files**:
+   - `main.conf`: Sets up basic ModSecurity configuration and includes other config files.
+   - `modsecurity.conf`: Contains core ModSecurity settings and custom rules.
+   - `ruleset.conf`: Includes the OWASP Core Rule Set (CRS).
+   - `nginx.conf`: Updated to enable ModSecurity and set the rules file.
+
+3. **OWASP Core Rule Set (CRS)**:
+   - A set of generic attack detection rules that provide protection against many common attack categories.
+
+### Key Features:
+
+1. **SQL Injection Protection**: 
+   ```
+   SecRule ARGS "@detectSQLi" \
+       "id:'200001',phase:2,block,log,msg:'SQL Injection Attempt Detected'"
+   ```
+   This rule uses ModSecurity's built-in SQL injection detection to block potential attacks.  This provides an outer layer of security against SQL injection attacks, ideally catching them _before_ the request is passed to the Rust API.
+
+2. **Cross-Site Scripting (XSS) Protection**:
+   ```
+   SecRule ARGS "@detectXSS" \
+       "id:'200002',phase:2,block,log,msg:'XSS Attempt Detected'"
+   ```
+   This rule employs ModSecurity's XSS detection capabilities to prevent XSS attacks.
+
+3. **CSRF Protection**:
+   ```
+   SecRule REQUEST_METHOD "!@streq GET" "chain,id:'200006',phase:2,block,log,msg:'CSRF Attempt Detected'"
+   SecRule &ARGS:csrf_token "@eq 0"
+   ```
+   This rule checks for the presence of a CSRF token in non-GET requests.
+
+4. **File Upload Protection**:
+   ```
+   SecRule FILES_NAMES "@rx \.(php|phtml|php3|php4|php5|phps|exe|jsp|asp|aspx|cgi|pl|py|sh|dll)$" \
+       "id:'200007',phase:2,block,log,msg:'Malicious File Upload Attempt Detected'"
+   ```
+   This rule blocks uploads of potentially dangerous file types.
+
+5. **User-Agent Anomaly Detection**:
+   ```
+   SecRule REQUEST_HEADERS:User-Agent "^$" \
+       "id:'200008',phase:2,block,log,msg:'Empty User-Agent Detected'"
+   ```
+   This rule flags requests with empty User-Agent headers, which could indicate automated attacks.
+
+6. **Logging and Debugging**:
+   - Extensive logging options are configured for debugging and auditing purposes.
+   - JSON log format is used for easier parsing and analysis.
+
+### Considerations:
+
+WAFs always introduce some overhead.  It's important to monitor your application's performance after implementation.  
+
+In realistic scenarios, WAFs will also sometimes block legitimate traffic - i.e. identify false positives.  This can be mitigated by carefully tuning rules, but there will likely always be edge cases.
+
+Sophisticated attackers may try to bypass WAF rules. This is why WAFs should be part of a layered security approach.
