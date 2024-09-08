@@ -14,9 +14,9 @@ The services demonstrated are:
 
 A Docker Compose file in each of the subdirectories provides a running example of the stack in that phase.
 
-## Disclaimer ⚠️
+## Disclaimer 
 
-**This project is for educational purposes only.  Source code and configuration in this repository demonstrate intentionally insecure practices to highlight the importance of proper security measures.** 
+**⚠ This project is for educational purposes only.  Source code and configuration in this repository demonstrate intentionally insecure practices to highlight the importance of proper security measures.** 
 
 The vulnerabilities shown in this project are dangerous and can lead to serious security breaches if used in a real-world application. By proceeding with this project, you acknowledge that you understand the risks associated with these vulnerable practices and agree to use this knowledge responsibly and ethically.
 
