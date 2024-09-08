@@ -1,5 +1,7 @@
 # Securing Nginx: A Step-by-Step Guide
 
+## Introduction
+
 This project demonstrates a progressive approach to securing a web application using [Nginx](https://github.com/nginx/nginx) as a reverse proxy. It uses a Rust API backend and PostgreSQL database. It's structured in five phases, each building upon the previous one to showcase different security measures and best practices - from a trivially vulnerable setup to a more robust starting point including TLS and WAF.
 
 Through five phases, we gradually secure this setup, addressing common vulnerabilities and implementing industry-standard security practices.
@@ -7,6 +9,33 @@ Through five phases, we gradually secure this setup, addressing common vulnerabi
 The purpose of this demo is to illustrate a hands-on approach to implementing basic security measures, including SQL injection prevention, TLS, mitigating excessive load, and setting up a WAF using [ModSecurity](https://github.com/owasp-modsecurity/ModSecurity) with Nginx.
 
 A `docker-compose.yml` file within each of the subdirectories provides a running example of the stack in that phase.
+
+# Table of Contents
+
+1. [Introduction](#introduction)
+2. [Project Structure](#project-structure)
+3. [Disclaimer](#disclaimer)
+4. [Phase 1: Trivially Vulnerable API](#phase-1-trivially-vulnerable-api)
+   - [Running the Phase 1 Demo](#running-the-phase-1-demo)
+   - [Demonstrating the SQL Injection Vulnerability](#demonstrating-the-sql-injection-vulnerability)
+5. [Phase 2: Implementing Parameterized SQL Queries](#phase-2-implementing-parameterized-sql-queries)
+   - [The Vulnerability](#the-vulnerability)
+   - [The Patch](#the-patch)
+   - [Running the Phase 2 Demo](#running-the-phase-2-demo)
+6. [Phase 3: Adding TLS with Nginx](#phase-3-adding-tls-with-nginx)
+   - [Inspecting Network Traffic with tcpdump](#inspecting-network-traffic-with-tcpdump)
+   - [Updating Nginx to use TLS](#updating-nginx-to-use-tls)
+   - [Running the Phase 3 Demo](#running-the-phase-3-demo)
+7. [Phase 4: Rate Limiting, Load Shedding](#phase-4-rate-limiting-load-shedding)
+   - [Nginx Directives for Rate and Connection Limiting](#nginx-directives-for-rate-and-connection-limiting)
+   - [Running the Phase 4 Demo](#running-the-phase-4-demo)
+   - [Observing Rate Limiting](#observing-rate-limiting)
+   - [Observing Concurrent Connection Limiting](#observing-concurrent-connection-limiting)
+8. [Phase 5: Adding a Web Application Firewall (WAF)](#phase-5-adding-a-web-application-firewall-waf)
+   - [Key Updates](#key-updates)
+   - [Key Features](#key-features)
+   - [Running the Phase 5 Demo](#running-the-phase-5-demo)
+   - [Considerations](#considerations)
 
 ## Disclaimer 
 
