@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This project demonstrates a progressive approach to securing a web application using [Nginx](https://github.com/nginx/nginx) as a reverse proxy. It uses a Rust API backend and PostgreSQL database. It's structured in five phases, each building upon the previous one to showcase different security measures and best practices - from a trivially vulnerable setup to a more robust starting point including TLS and WAF.
+This project demonstrates a progressive approach to securing a web application using [Nginx](https://github.com/nginx/nginx) as a reverse proxy. It uses a Rust API backend and PostgreSQL database, and provides example Docker Compose files for hands-on experimentation. It's structured in five phases, each building upon the previous one to showcase different security measures and best practices - from a trivially vulnerable setup to a more robust starting point including TLS and WAF using ModSecurity.
 
 Through five phases, we gradually secure this setup, addressing common vulnerabilities and implementing industry-standard security practices.
 
