@@ -36,6 +36,7 @@ A `docker-compose.yml` file within each of the subdirectories provides a running
    - [Key Features](#key-features)
    - [Running the Phase 5 Demo](#running-the-phase-5-demo)
    - [Considerations](#considerations)
+9. [Contributing](#contributing)
 
 ## Disclaimer 
 
@@ -776,3 +777,28 @@ WAFs always introduce some overhead.  It's important to monitor your application
 In realistic scenarios, WAFs will also sometimes block legitimate traffic - i.e. identify false positives.  This can be mitigated by carefully tuning rules, but there will likely always be edge cases.
 
 Sophisticated attackers may try to bypass WAF rules. This is why WAFs should be part of a layered security approach.
+
+## Contributing
+
+Contributions to this educational project are welcome and appreciated. By contributing, you help make this resource more valuable for everyone interested in learning about web application security. Here's how you can contribute:
+
+1. **Reporting Issues**
+   - If you find any bugs, errors, or areas for improvement, please open an issue in the GitHub repository.
+   - Clearly describe the problem, including steps to reproduce if applicable.
+   - Suggestions for fixes or improvements are always welcome.
+
+2. **Submitting Pull Requests**
+   - Fork the repository and create a new branch for your feature or fix.
+   - Ensure your code adheres to the existing style for consistency.
+   - Add or update documentation as necessary.
+   - Test your changes thoroughly.
+   - Submit a pull request with a clear description of the changes and their purpose.
+
+3. **Enhancing Documentation**
+   - Help improve explanations, fix typos, or add clarifying examples.
+   - If you found a part of the tutorial confusing, chances are others will too. Your input can help make it clearer.
+
+4. **Suggesting New Topics**
+   - If you have ideas for new security concepts to cover or additional phases to add to the project, please open an issue to discuss.
+
+Thank you for your interest in contributing to this project! Your efforts help make web application security more accessible and understandable for everyone.
