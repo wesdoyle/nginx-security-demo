@@ -16,7 +16,7 @@ The vulnerabilities shown in this project are dangerous and can lead to serious 
 
 Always sanitize your inputs and use parameterized queries to prevent SQL injection vulnerabilities. Always encrypt traffic between services. Never trust user input. 
 
-**Security is an ongoing practice, not a one-time implementation.** Stay informed, keep your software up-to-date, and continuously improve your security posture. See the OWASP Top 10 awareness document as a first step. See [https://owasp.org/www-project-top-ten/](https://owasp.org/www-project-top-ten/)
+**Security is an ongoing practice, not a one-time implementation.** Stay informed, keep your software up-to-date, and continuously improve your security posture. Refer to the [OWASP Top 10 awareness document](https://owasp.org/www-project-top-ten/) as a first step.
 
 ## Project Structure
 
