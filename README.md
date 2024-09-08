@@ -16,7 +16,7 @@ A Docker Compose file in each of the subdirectories provides a running example o
 
 ## Disclaimer 
 
-**⚠ This project is for educational purposes only.  Source code and configuration in this repository demonstrate intentionally insecure practices to highlight the importance of proper security measures.** 
+**⚠️ This project is for educational purposes only.  Source code and configuration in this repository demonstrate intentionally insecure practices to highlight the importance of proper security measures.** 
 
 The vulnerabilities shown in this project are dangerous and can lead to serious security breaches if used in a real-world application. By proceeding with this project, you acknowledge that you understand the risks associated with these vulnerable practices and agree to use this knowledge responsibly and ethically.
 
@@ -61,8 +61,9 @@ Each directory contains the following files and subdirectories:
 
 ## Phase 1: Trivially Vulnerable API 
 
-**⚠️ This phase sets up the basic application with a improperly-written, vulnerable API.** It includes:
+**⚠️ This phase sets up the basic application with a improperly-written, vulnerable API.** 
 
+It includes:
 - A Rust web API with a trivial SQL injection vulnerability
 - A PostgreSQL database
 - A basic Nginx reverse proxy configuration
@@ -298,6 +299,8 @@ This phase demonstrates the importance of encrypted communications in web securi
 
 If you run the Phase 1 or Phase 2 stack, you'll notice that all traffic is routed to the API through nginx over HTTP.  You'll notice that if you inspect network traffic on the loopback interface, it's completely unencrypted.  You can easily read information about the HTTP request and response events, including the entire contents of the payload.
 
+### Inspecting network traffic with `tcpdump` 🔍
+
 On macOS, you can use a tool like `tcpdump` to demonstrate this:
 
 ```sh
@@ -316,7 +319,6 @@ User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/201001
 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8
 Accept-Language: en-US,en;q=0.5
 Accept-Encoding: gzip, deflate, br, zstd
-
 
 22:49:15.304318 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 52, bad cksum 0 (->3cc2)!)
 proto TCP (6), length 526, bad cksum 0 (->3ae8)!)
@@ -396,14 +398,13 @@ docker compose up
 
 Now, with containers in this and subsequent phases running, we can access API data using HTTPS, e.g. at `https://localhost/search?prefix=Intro`.
 
-In fact, we can use `tcpdump` again, modifying the command slightly to listen on port `443` instead of `80`. We'll also ignore checksum validation with `-K`, since we're working with the loopback interface (`lo0`) - these checks will typically fail when inspecting loopback traffic, as it's a special interface. There are lower-level reasons for this that aren't relevant to this demonstration; leaving the warnings in the output just add noise to what we're trying to observe.
+In fact, we can use `tcpdump` again, modifying the command slightly to listen on port `443` instead of `80`. We'll also ignore checksum validation with `-K`, since we're working with the loopback interface (`lo0`). Checksum validations often fail when inspecting loopback traffic because the operating system may not compute checksums for loopback packets in the same way it does for packets traversing a physical network interface. This is an optimization, as the integrity of loopback traffic is generally assured by the OS itself. The exact behavior can vary depending on the operating system and its network stack implementation. For our demonstration, leaving these warnings in the output would just add noise to what we're trying to observe.
 
 ```sh
 $ sudo tcpdump -i lo0 -nvAK 'tcp and port 443 and host 127.0.0.1'
 ```
 
-visiting `https://localhost/search?prefix=Intro` in your browser, you'll see something like this written to your terminal by tcpdump (truncated for brevity):
-
+Now, when you visit `https://localhost/search?prefix=Intro` in your browser, you'll see something like this written to your terminal by `tcpdump` (truncated for brevity):
 
 ```sh
 tcpdump: listening on lo0, link-type NULL (BSD loopback), snapshot length 524288 bytes
@@ -561,6 +562,182 @@ This phase incorporates ModSecurity, a powerful open-source Web Application Fire
 6. **Logging and Debugging**:
    - Extensive logging options are configured for debugging and auditing purposes.
    - JSON log format is used for easier parsing and analysis.
+
+To demonstrate the WAF in action, run the containers in this directory with
+
+```sh
+cd 05-adding-waf
+docker compose down -v && \
+docker compose build && \
+docker compose up
+```
+
+Now, if you attempt to make a request with a potentially malicious payload, as we saw in Phase 1, the WAF will deny the request before it can be routed to the application layer. For example, visiting (https://localhost/search?prefix=Intro' UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM students--` in your browser will cause the WAF to block the request and return a 403 Forbidden response.
+
+The container is configured to log the WAF output as JSON, for observability:
+
+```sh
+{
+    "transaction": {
+        "client_ip": "192.168.65.1",
+        "time_stamp": "Sun Sep  8 14:56:21 2024",
+        "server_id": "01e30965642ab90e439b30f837ee5812d478e169",
+        "client_port": 60474,
+        "host_ip": "172.22.0.4",
+        "host_port": 443,
+        "unique_id": "172580738197.076400",
+        "request": {
+            "method": "GET",
+            "http_version": 1.1,
+            "uri": "/search?prefix=Intro%27%20UNION%20SELECT%20id,%20CONCAT(first_name,%20last_name),%20email,%20CAST(date_of_birth%20as%20VARCHAR)%20FROM%20students--",
+            "headers": {
+                "Sec-Fetch-User": "?1",
+                "Sec-Fetch-Site": "none",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0",
+                "Upgrade-Insecure-Requests": "1",
+                "Connection": "keep-alive",
+                "Sec-Fetch-Mode": "navigate",
+                "Accept-Encoding": "gzip, deflate, br, zstd",
+                "Accept-Language": "en-US,en;q=0.5",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
+                "Sec-Fetch-Dest": "document",
+                "Host": "localhost",
+                "Priority": "u=0, i"
+            }
+        },
+        "response": {
+            "http_code": 403,
+            "headers": {
+                "Server": "nginx/1.19.3",
+                "Date": "Sun, 08 Sep 2024 14:56:21 GMT",
+                "Content-Length": "153",
+                "Content-Type": "text/html",
+                "Connection": "keep-alive"
+            }
+        },
+        "producer": {
+            "modsecurity": "ModSecurity v3.0.8 (Linux)",
+            "connector": "ModSecurity-nginx v1.0.3",
+            "secrules_engine": "Enabled",
+            "components": [
+                "OWASP_CRS/3.3.0\""
+            ]
+        },
+        "messages": [
+            {
+                "message": "SQL Injection Attempt Detected",
+                "details": {
+                    "match": "detected SQLi using libinjection.",
+                    "reference": "v19,108",
+                    "ruleId": "200001",
+                    "file": "/usr/local/nginx/conf/modsecurity/modsecurity.conf",
+                    "lineNumber": "28",
+                    "data": "",
+                    "severity": "0",
+                    "ver": "",
+                    "rev": "",
+                    "tags": [],
+                    "maturity": "0",
+                    "accuracy": "0"
+                }
+            },
+            {
+                "message": "SQL Injection Attack Detected via libinjection",
+                "details": {
+                    "match": "detected SQLi using libinjection.",
+                    "reference": "v19,108",
+                    "ruleId": "942100",
+                    "file": "/usr/local/coreruleset/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
+                    "lineNumber": "45",
+                    "data": "Matched Data: sUEn, found within ARGS:prefix: Intro' UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM students--",
+                    "severity": "2",
+                    "ver": "OWASP_CRS/3.3.0",
+                    "rev": "",
+                    "tags": [],
+                    "maturity": "0",
+                    "accuracy": "0"
+                }
+            },
+            {
+                "message": "Detects MSSQL code execution and information gathering attempts",
+                "details": {
+                    "match": "Matched \"Operator `Rx' with parameter `(?i:(?:[\\\"'`](?:;?\\s*?(?:having|select|union)\b\\s*?[^\\s]|\\s*?!\\s*?[\\\"'`\\w])|(?:c(?:onnection_id|urrent_user)|database)\\s*?\\([^\\)]*?|u(?:nion(?:[\\w(\\s]*?select| select @)|ser\\s*?\\([^\\)]*?)|s(?:chema\\s* (165 characters omitted)' against variable `ARGS:prefix' (Value: `Intro' UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM st (8 characters omitted)' )",
+                    "reference": "o5,9v19,108t:urlDecodeUni",
+                    "ruleId": "942190",
+                    "file": "/usr/local/coreruleset/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
+                    "lineNumber": "164",
+                    "data": "Matched Data: ' UNION S found within ARGS:prefix: Intro' UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM students--",
+                    "severity": "2",
+                    "ver": "OWASP_CRS/3.3.0",
+                    "rev": "",
+                    "tags": [
+                        "application-multi",
+                        "language-multi",
+                        "platform-multi",
+                        "attack-sqli",
+                        "paranoia-level/1",
+                        "OWASP_CRS",
+                        "capec/1000/152/248/66",
+                        "PCI/6.5.2"
+                    ],
+                    "maturity": "0",
+                    "accuracy": "0"
+                }
+            },
+            {
+                "message": "Looking for basic sql injection. Common attack string for mysql, oracle and others",
+                "details": {
+                    "match": "Matched \"Operator `Rx' with parameter `(?i)union.*?select.*?from' against variable `ARGS:prefix' (Value: `Intro' UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM st (8 characters omitted)' )",
+                    "reference": "o7,90v19,108t:urlDecodeUni",
+                    "ruleId": "942270",
+                    "file": "/usr/local/coreruleset/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
+                    "lineNumber": "277",
+                    "data": "Matched Data: UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM found within ARGS:prefix: Intro' UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM students--",
+                    "severity": "2",
+                    "ver": "OWASP_CRS/3.3.0",
+                    "rev": "",
+                    "tags": [
+                        "application-multi",
+                        "language-multi",
+                        "platform-multi",
+                        "attack-sqli",
+                        "paranoia-level/1",
+                        "OWASP_CRS",
+                        "capec/1000/152/248/66",
+                        "PCI/6.5.2"
+                    ],
+                    "maturity": "0",
+                    "accuracy": "0"
+                }
+            },
+            {
+                "message": "Inbound Anomaly Score Exceeded (Total Score: 15)",
+                "details": {
+                    "match": "Matched \"Operator `Ge' with parameter `5' against variable `TX:ANOMALY_SCORE' (Value: `15' )",
+                    "reference": "",
+                    "ruleId": "949110",
+                    "file": "/usr/local/coreruleset/rules/REQUEST-949-BLOCKING-EVALUATION.conf",
+                    "lineNumber": "80",
+                    "data": "",
+                    "severity": "2",
+                    "ver": "OWASP_CRS/3.3.0",
+                    "rev": "",
+                    "tags": [
+                        "application-multi",
+                        "language-multi",
+                        "platform-multi",
+                        "attack-generic"
+                    ],
+                    "maturity": "0",
+                    "accuracy": "0"
+                }
+            }
+        ]
+    }
+}
+```
+
+You can find, through experimenting with various request payloads, that the WAF will also block typical XSS and CSRF requests.
 
 ### Considerations:
 
