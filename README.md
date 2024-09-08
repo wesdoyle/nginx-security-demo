@@ -1,33 +1,33 @@
 # Securing Nginx: A Step-by-Step Guide
 
-This project demonstrates a progressive approach to securing a web application 
-using Nginx as a reverse proxy. It's structured in five phases, each building 
-upon the previous one to showcase different security measures and best practices.
+This project demonstrates a progressive approach to securing a web application using Nginx as a reverse proxy. It uses a Rust API backend and PostgreSQL database. It's structured in five phases, each building upon the previous one to showcase different security measures and best practices.
+
+Through five phases, we gradually secure this setup, addressing common vulnerabilities and implementing industry-standard security practices.
+
+The purpose of this demo is to illustrate a hands-on approach to implementing basic security measures, including SQL injection prevention, SSL, mitigating excessive load, and setting up a WAF with Nginx.
+
+The services demonstrated are:
+
+- Nginx reverse proxy
+- Rust web API implemented with actix
+- PostgreSQL database 
+
+A Docker Compose file in each of the subdirectories provides a running example of the stack in that phase.
 
 ## Disclaimer ⚠️
 
 **This project is for educational purposes only.  Source code and configuration in this repository demonstrate intentionally insecure practices to highlight the importance of proper security measures.** 
 
-The vulnerabilities shown in this project are dangerous and can lead to catastrophic security breaches if used in a real-world application. By proceeding with this project, you acknowledge that you understand the risks associated with these vulnerable practices and agree to use this knowledge responsibly and ethically.
+The vulnerabilities shown in this project are dangerous and can lead to serious security breaches if used in a real-world application. By proceeding with this project, you acknowledge that you understand the risks associated with these vulnerable practices and agree to use this knowledge responsibly and ethically.
 
 Always sanitize your inputs and use parameterized queries to prevent SQL injection vulnerabilities. Always encrypt traffic between services. Never trust user input. 
 
 Security is an ongoing practice, not a one-time implementation. Stay informed and continuously improve your security posture. See the OWASP Top 10 awareness document as a first step. [https://owasp.org/www-project-top-ten/]
 
-## Project Overview
-
-This repo demonstrates an insecure simple web application with a Rust API backend, PostgreSQL database, and Nginx reverse proxy. 
-
-Through five phases, we gradually secure this setup, addressing common vulnerabilities and 
-implementing industry-standard security practices.
-
-This is not meant to be an all-encompassing security hardening exercise; it's meant to demonstrate
-an approach to implementing basic security measures, including TLS, mitigating excessive load, preventing SQL injection, and setting up a WAF with Nginx.
-
 ## Project Structure
 
 The project is organized into five directories; after the first phase, each 
-subsequent step represents improvements to overall web application security:
+subsequent step represents a gradual improvement to overall web application security:
 
 ```
 .
@@ -48,7 +48,6 @@ Each directory contains the following files and subdirectories:
 
 1. In any given Phase directory, stop containers and start containers:
    ```
-   cd 01-vulnerable-setup
    docker-compose up --build
    ```
 
