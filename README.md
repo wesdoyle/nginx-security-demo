@@ -1,18 +1,12 @@
 # Securing Nginx: A Step-by-Step Guide
 
-This project demonstrates a progressive approach to securing a web application using Nginx as a reverse proxy. It uses a Rust API backend and PostgreSQL database. It's structured in five phases, each building upon the previous one to showcase different security measures and best practices.
+This project demonstrates a progressive approach to securing a web application using [Nginx](https://github.com/nginx/nginx) as a reverse proxy. It uses a Rust API backend and PostgreSQL database. It's structured in five phases, each building upon the previous one to showcase different security measures and best practices - from a trivially vulnerable setup to a more robust starting point including TLS and WAF.
 
 Through five phases, we gradually secure this setup, addressing common vulnerabilities and implementing industry-standard security practices.
 
-The purpose of this demo is to illustrate a hands-on approach to implementing basic security measures, including SQL injection prevention, TLS, mitigating excessive load, and setting up a WAF with Nginx.
+The purpose of this demo is to illustrate a hands-on approach to implementing basic security measures, including SQL injection prevention, TLS, mitigating excessive load, and setting up a WAF (using [ModSecurity](https://github.com/owasp-modsecurity/ModSecurity)) with [Nginx](https://github.com/nginx/nginx).
 
-The services demonstrated are:
-
-- Nginx reverse proxy
-- Rust web API implemented with actix
-- PostgreSQL database 
-
-A Docker Compose file in each of the subdirectories provides a running example of the stack in that phase.
+A `docker-compose.yml` file within each of the subdirectories provides a running example of the stack in that phase.
 
 ## Disclaimer 
 
@@ -22,12 +16,11 @@ The vulnerabilities shown in this project are dangerous and can lead to serious 
 
 Always sanitize your inputs and use parameterized queries to prevent SQL injection vulnerabilities. Always encrypt traffic between services. Never trust user input. 
 
-Security is an ongoing practice, not a one-time implementation. Stay informed and continuously improve your security posture. See the OWASP Top 10 awareness document as a first step. See [https://owasp.org/www-project-top-ten/](https://owasp.org/www-project-top-ten/)
+**Security is an ongoing practice, not a one-time implementation.** Stay informed, keep your software up-to-date, and continuously improve your security posture. See the OWASP Top 10 awareness document as a first step. See [https://owasp.org/www-project-top-ten/](https://owasp.org/www-project-top-ten/)
 
 ## Project Structure
 
-The project is organized into five directories; after the first phase, each 
-subsequent step represents a gradual improvement to overall web application security:
+The project is organized into five directories; after the first phase, each subsequent step represents a gradual improvement to overall web application security:
 
 ```
 .
@@ -58,18 +51,16 @@ Each directory contains the following files and subdirectories:
    docker-compose down -v
    ```
 
-
 ## Phase 1: Trivially Vulnerable API 
 
 **⚠️ This phase sets up the basic application with a improperly-written, vulnerable API.** 
 
 It includes:
-- A Rust web API with a trivial SQL injection vulnerability
+- A Rust web API with a trivially-exploited SQL injection vulnerability
 - A PostgreSQL database
 - A basic Nginx reverse proxy configuration
 
 This setup demonstrates common security flaws in web applications, including a SQL injection vulnerability, unencrypted communication due to the absence of TLS, and the lack of measures to mitigate heavy load.
-
 
 ### Running the Phase 1 Demo 
 
@@ -437,8 +428,7 @@ Building on the previous phase, this directory adds:
 - Rate limiting to prevent abuse of the API
 - Load shedding to maintain service availability under high load
 
-These measures help protect against basic denial-of-service attacks 
-and API abuse.
+These measures help protect against basic denial-of-service attacks and API abuse. 🔥
 
 To implement this, we update `nginx.conf` to include new directives for rate limiting and connection limiting: `limit_req`, `limit_conn`.
 
@@ -485,11 +475,11 @@ You can test this by opening a browser to `http://localhost/search?prefix=Intro`
 
 ### Observing rate limiting
 
-Refresh the page and notice that it will hang when you make more than one request per second.  Make many consecutive requests by reloading rapidly, and notice that nginx will server a 503 Service Unavailable for a brief period of time.
+Refresh the page and notice that it will hang when you make more than one request per second.  Make many consecutive requests by reloading rapidly, and notice that nginx will server a 503 Service Unavailable for a brief period of time. 🙅
 
 ### Observing concurrent connection limiting 
 
-To observe concurrent connection limits, you can use a tool like `ab`:
+To observe concurrent connection limits, you can use a tool like `ab`: 
 
 ```sh
 $ ab -n 20 -c 20 http://localhost/search\?prefix\=Intro
@@ -501,7 +491,7 @@ It's may be case that there is some interaction between the rate limiting rule a
 
 ## Phase 5: Adding a Web Application Firewall (WAF)
 
-This phase incorporates ModSecurity, a powerful open-source Web Application Firewall (WAF), into our Nginx setup. A WAF adds an extra layer of security by inspecting incoming HTTP traffic and blocking potential attacks before they reach your application.
+This phase incorporates ModSecurity, a powerful open-source Web Application Firewall (WAF), into our Nginx setup. A WAF adds an extra layer of security by inspecting incoming HTTP traffic and blocking potential attacks before they reach your application. 🧱
 
 - Integrates ModSecurity with Nginx
 - Configures basic ModSecurity rules to protect against common web attacks
@@ -574,7 +564,7 @@ docker compose up
 
 Now, if you attempt to make a request with a potentially malicious payload, as we saw in Phase 1, the WAF will deny the request before it can be routed to the application layer. For example, visiting (https://localhost/search?prefix=Intro' UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM students--` in your browser will cause the WAF to block the request and return a 403 Forbidden response.
 
-The container is configured to log the WAF output as JSON, for observability:
+The container is configured to log the WAF output as JSON, for observability: 👀
 
 ```sh
 {
