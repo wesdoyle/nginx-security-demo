@@ -325,14 +325,10 @@ We've significantly improved application-level security by parameterizing our SQ
 This phase demonstrates the importance of encrypted communications in web security.
 
 **In this phase, we'll introduce HTTPS to our stack 🔐:**
-- Adds SSL/TLS encryption using self-signed certificates
+- Adds SSL/TLS encryption using self-signed certificates (see note about self-signed certs below)
 - Configures Nginx to use HTTPS and redirect HTTP traffic to HTTPS
 
 If you run the Phase 1 or Phase 2 stack, you'll notice that all traffic is routed to the API through nginx over HTTP.  You'll notice that if you inspect network traffic on the loopback interface, it's completely unencrypted.  You can easily read information about the HTTP request and response events, including the entire contents of the payload.
-
-**Self-signed certificates are suitable for development and testing purposes but not for production environments.** Self-signed certificates will trigger security warnings in browsers and are not trusted by default.
-
-For production use, we would obtain a certificate from a trusted Certificate Authority (CA). Services like Let's Encrypt provide free, trusted TLS certificates that are widely recognized by browsers.
 
 ### Inspecting network traffic with `tcpdump` 🔍
 
@@ -370,7 +366,7 @@ w[;.E...HTTP/1.1 200 OK
 ... 
 ```
 
-As you can see, traffic sent over HTTP is insecure.  To encrypt this data, we update our Ngnix server to use an TLS cert.  For demonstration purposes, we use a self-signed cert, generated locally using `openssl`:
+As you can see, traffic sent over HTTP is insecure.  To encrypt this data, we update our Ngnix server to use an TLS cert.  **For demonstration purposes, we use a self-signed cert, generated locally using `openssl`**:
 
 ```sh
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -378,6 +374,10 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -out nginx-selfsigned.crt \
   -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
 ```
+
+**Note: Self-signed certificates are suitable for development and testing purposes but not for production environments.** 🔏 Self-signed certificates will trigger security warnings in browsers and are not trusted by default.
+
+For production use, we would obtain a certificate from a trusted Certificate Authority (CA). Services like Let's Encrypt provide free, trusted TLS certificates that are widely recognized by browsers.
 
 ### Updating Nginx to use TLS 
 
