@@ -4,7 +4,7 @@ This project demonstrates a progressive approach to securing a web application u
 
 Through five phases, we gradually secure this setup, addressing common vulnerabilities and implementing industry-standard security practices.
 
-The purpose of this demo is to illustrate a hands-on approach to implementing basic security measures, including SQL injection prevention, TLS, mitigating excessive load, and setting up a WAF (using [ModSecurity](https://github.com/owasp-modsecurity/ModSecurity)) with [Nginx](https://github.com/nginx/nginx).
+The purpose of this demo is to illustrate a hands-on approach to implementing basic security measures, including SQL injection prevention, TLS, mitigating excessive load, and setting up a WAF using [ModSecurity](https://github.com/owasp-modsecurity/ModSecurity) with Nginx.
 
 A `docker-compose.yml` file within each of the subdirectories provides a running example of the stack in that phase.
 
