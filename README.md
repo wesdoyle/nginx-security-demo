@@ -286,7 +286,7 @@ The user-supplied query.prefix is directly inserted into the SQL query string. T
 
 ### The patch 🩹
 
-In Phase 2, we improve the Rust API by using parameterized queries via the `sqlx::query_as!` macro:
+In Phase 2, we improve the Rust API by using parameterized queries via the [`sqlx::query_as!` macro](https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html#using-rust-with-sqlx):
 
 ```rust
 let courses = sqlx::query_as!(
@@ -299,6 +299,8 @@ let courses = sqlx::query_as!(
 ```
 
 Now, the SQL query uses a parameter placholder `$1` instead of interpolating the user input directly into the string.  The macro ensures that user input is escaped and treated as data, rather than as part of the SQL command.  If malicious input is provided as an input, it will be treated as literal string data, preventing unintended SQL execution. 
+
+**Always ensure SQL parameterization is handled server-side.**
 
 By implementing this patch, the application significantly enhances its security posture against one of the most common and dangerous web application vulnerabilities.
 
