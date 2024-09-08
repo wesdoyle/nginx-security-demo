@@ -47,7 +47,7 @@ Always sanitize your inputs and use parameterized queries to prevent SQL injecti
 
 **Security is an ongoing practice, not a one-time implementation.** Stay informed, keep your software up-to-date, and continuously improve your security posture. Refer to the [OWASP Top 10 awareness document](https://owasp.org/www-project-top-ten/) as a first step.
 
-By using this Software, you acknowledge and agree that:
+By using any part of this software, you acknowledge and agree that:
 
 1. You understand the risks associated with these vulnerable practices.
 2. You will use this knowledge responsibly and ethically.
