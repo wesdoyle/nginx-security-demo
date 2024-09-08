@@ -47,6 +47,15 @@ Always sanitize your inputs and use parameterized queries to prevent SQL injecti
 
 **Security is an ongoing practice, not a one-time implementation.** Stay informed, keep your software up-to-date, and continuously improve your security posture. Refer to the [OWASP Top 10 awareness document](https://owasp.org/www-project-top-ten/) as a first step.
 
+By using this Software, you acknowledge and agree that:
+
+1. You understand the risks associated with these vulnerable practices.
+2. You will use this knowledge responsibly and ethically.
+3. You will not deploy or use any part of this project in a production environment or any environment containing sensitive data.
+4. The author(s) of this project are not responsible for any damages, losses, or consequences resulting from the use or misuse of this information.
+5. You are solely responsible for securing your own applications and infrastructure.
+6. The techniques demonstrated here may become outdated, and new vulnerabilities may emerge. It's your responsibility to stay informed about current security best practices.
+
 ## Project Structure
 
 The project is organized into five directories; after the first phase, each subsequent step represents a gradual improvement to overall web application security:
