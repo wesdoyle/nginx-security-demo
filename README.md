@@ -4,7 +4,7 @@ This project demonstrates a progressive approach to securing a web application u
 
 Through five phases, we gradually secure this setup, addressing common vulnerabilities and implementing industry-standard security practices.
 
-The purpose of this demo is to illustrate a hands-on approach to implementing basic security measures, including SQL injection prevention, SSL, mitigating excessive load, and setting up a WAF with Nginx.
+The purpose of this demo is to illustrate a hands-on approach to implementing basic security measures, including SQL injection prevention, TLS, mitigating excessive load, and setting up a WAF with Nginx.
 
 The services demonstrated are:
 
@@ -58,9 +58,10 @@ Each directory contains the following files and subdirectories:
    docker-compose down -v
    ```
 
+
 ## Phase 1: Trivially Vulnerable API 
 
-**This phase sets up the basic application with a improperly-written, vulnerable API.** It includes:
+**⚠️ This phase sets up the basic application with a improperly-written, vulnerable API.** It includes:
 
 - A Rust web API with a trivial SQL injection vulnerability
 - A PostgreSQL database
@@ -68,9 +69,13 @@ Each directory contains the following files and subdirectories:
 
 This setup demonstrates common security flaws in web applications, including a SQL injection vulnerability, unencrypted communication due to the absence of TLS, and the lack of measures to mitigate heavy load.
 
+
+### Running the Phase 1 Demo 
+
 To demonstrate, run the containers in this directory with
 
 ```sh
+cd 01-vulnerable-setup
 docker compose down -v && \
 docker compose build && \
 docker compose up
@@ -123,18 +128,6 @@ $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%201,%20datname
   {
     "id": 1,
     "title": "template0",
-    "description": null,
-    "instructor": null
-  },
-  {
-    "id": 1,
-    "title": "postgres",
-    "description": null,
-    "instructor": null
-  },
-  {
-    "id": 1,
-    "title": "template1",
     "description": null,
     "instructor": null
   },
@@ -234,23 +227,17 @@ $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%20id,%20CONCAT
     "description": "sophia.adams@example.com",
     "instructor": "2001-05-15"
   },
-  {
-    "id": 5,
-    "title": "Emma Evans",
-    "description": "emma.evans@example.com",
-    "instructor": "2001-07-18"
-  },
   ...
 ]
 ```
 
-**Securing this API properly will require implementing security measures at multiple layers - in the next step, we'll focus on an immediate patch to the application layer.**
+**🕵️ Securing this API will require implementing security measures at multiple layers. In the next step, we'll focus on an immediate patch to the application layer to prevent basic SQL injection.**
 
 ## Phase 2: Implementing parameterized SQL queries
 
 This phase focuses on basic application-level security.  We'll address the immediate concern of the SQL injection vulnerability in the Rust API by parameterizing the query invoked by this API endpoint.
 
-### The vulnerability
+### The vulnerability 💉
 
 In Phase 1, the Rust code exposed a critical SQL injection vulnerability through unsafe string concatenation:
 
@@ -266,9 +253,9 @@ let courses = sqlx::query_as::<_, Course>(&sql)
 
 The user-supplied query.prefix is directly inserted into the SQL query string. There's no filtering or escaping of special characters in the user input. As demonstrated in Phase 1, an attacker could inject additional SQL commands, potentially leading to unauthorized data access or manipulation.
 
-### The patch
+### The patch 🩹
 
-In Phase 2, the code is improved by using parameterized queries via the `sqlx::query_as!` macro:
+In Phase 2, we improve the Rust API by using parameterized queries via the `sqlx::query_as!` macro:
 
 ```rust
 let courses = sqlx::query_as!(
@@ -283,6 +270,23 @@ let courses = sqlx::query_as!(
 Now, the SQL query uses a parameter placholder `$1` instead of interpolating the user input directly into the string.  The macro ensures that user input is escaped and treated as data, rather than as part of the SQL command.  If malicious input is provided as an input, it will be treated as literal string data, preventing unintended SQL execution. 
 
 By implementing this patch, the application significantly enhances its security posture against one of the most common and dangerous web application vulnerabilities.
+
+### Running the Phase 2 Demo 
+
+To demonstrate, run the containers in this directory with
+
+```sh
+cd 02-parameterized-query
+docker compose down -v && \
+docker compose build && \
+docker compose up
+```
+
+Try again to run a SQL injection query against the API:
+
+(`http://localhost/search?prefix=Intro' UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM students--`)
+
+Notice, now, that the request will not be handled properly, as the code expects a valid, type-checked input, rather than an arbitrary string.
 
 ## Phase 3: Adding TLS with Nginx 
 
@@ -329,7 +333,7 @@ w[;.E...HTTP/1.1 200 OK
 ... 
 ```
 
-As you can see, traffic sent over HTTP is insecure.  To encrypt this data, we update our Ngnix server to use an SSL cert.  For demonstration purposes, we use a self-signed cert, generated locally using `openssl`:
+As you can see, traffic sent over HTTP is insecure.  To encrypt this data, we update our Ngnix server to use an TLS cert.  For demonstration purposes, we use a self-signed cert, generated locally using `openssl`:
 
 ```sh
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -338,12 +342,16 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
 ```
 
-In our `nginx.conf` configuration, it's very simple to set up SSL using this key and cert.  First, we create a new server block to listen on port `443`, the default HTTPS port. We redirect traffic from `80` to `443`:
+**Self-signed certificates are suitable for development and testing purposes but not for production environments.** Self-signed certificates will trigger security warnings in browsers and are not trusted by default.
+
+For production use, we would obtain a certificate from a trusted Certificate Authority (CA). Services like Let's Encrypt provide free, trusted TLS certificates that are widely recognized by browsers.
+
+### Updating Nginx to use TLS 
+
+In our `nginx.conf` configuration, it's very simple to set up TLS using this key and cert.  First, we create a new server block to listen on port `443`, the default HTTPS port. We redirect traffic from `80` to `443`:
 
 ```nginx
   # nginx.conf 
-
-  # ...
 
   # Redirect HTTP traffic to HTTPS
   server {
@@ -356,7 +364,7 @@ In our `nginx.conf` configuration, it's very simple to set up SSL using this key
   server {
     listen 443 ssl;
     server_name localhost;
-  # ...
+  # ... other configuration ...
 
   }
 ```
@@ -364,17 +372,29 @@ In our `nginx.conf` configuration, it's very simple to set up SSL using this key
 In our new HTTPS server block, we use the `ssl_certificate` and `ssl_certificate_key` directives to point the server to the cert and key we generated.
 
 ```nginx
-    # SSL certificate config
+    # SSL / TLS certificate config
     ssl_certificate /etc/nginx/ssl/nginx-selfsigned.crt;
     ssl_certificate_key /etc/nginx/ssl/nginx-selfsigned.key;
 
-    # SSL protocol and cipher config - only allow TLS 1.2 and 1.3
+    # Protocols and cipher config - only allow TLS 1.2 and 1.3
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
     ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256 # additional ciphers... 
+  # ... other configuration ...
 ```
 
-Now, with containers in this and subsequent phases running, we can access API data using HTTPS, e.g. at `http://localhost/search?prefix=Intro`
+### Running the Phase 3 Demo 
+
+To demonstrate, run the containers in this directory with
+
+```sh
+cd 03-adding-tls
+docker compose down -v && \
+docker compose build && \
+docker compose up
+```
+
+Now, with containers in this and subsequent phases running, we can access API data using HTTPS, e.g. at `https://localhost/search?prefix=Intro`.
 
 In fact, we can use `tcpdump` again, modifying the command slightly to listen on port `443` instead of `80`. We'll also ignore checksum validation with `-K`, since we're working with the loopback interface (`lo0`) - these checks will typically fail when inspecting loopback traffic, as it's a special interface. There are lower-level reasons for this that aren't relevant to this demonstration; leaving the warnings in the output just add noise to what we're trying to observe.
 
@@ -419,31 +439,9 @@ Building on the previous phase, this directory adds:
 These measures help protect against basic denial-of-service attacks 
 and API abuse.
 
-To demonstrate, run the containers in this directory with
+To implement this, we update `nginx.conf` to include new directives for rate limiting and connection limiting: `limit_req`, `limit_conn`.
 
-```sh
-docker compose down -v && \
-docker compose build && \
-docker compose up
-```
-
-You can test this by opening a browser to `http://localhost/search?prefix=Intro`.
-
-Refresh the page and notice that it will hang when you make more than one request per second.
-
-Make many consecutive requests by reloading rapidly, and notice that nginx will server a 503 Service Unavailable for a brief period of time.
-
-To observe concurrent connection limits, you can use a tool like `ab`:
-
-```sh
-$ ab -n 20 -c 20 http://localhost/search\?prefix\=Intro
-```
-
-### How does this work?
-
-We have updated `nginx.conf` to include new directives for rate limiting 
-and connection limiting to help manage traffic and protect the server from 
-potential abuse.
+### Nginx directives for rate and connection limiting
 
 **`limit_req_zone` and `limit_conn_zone`**:
 
@@ -454,14 +452,11 @@ limit_req_zone $binary_remote_addr zone=one:10m rate=1r/s;
 limit_conn_zone $binary_remote_addr zone=addr:10m;
 ```
 
-`limit_req_zone`: Creates a shared memory zone named `one` of 10 megabytes to store 
-request rates. It allows each client IP ($binary_remote_addr) to make up to 1 request 
-per second (rate=1r/s).
+`limit_req_zone`: Creates a shared memory zone named `one` of 10 megabytes to store request rates. It allows each client IP ($binary_remote_addr) to make up to 1 request per second (rate=1r/s).
 
-`limit_conn_zone`: Creates a shared memory zone named `addr` of 10 megabytes to track the 
-number of simultaneous connections for each client IP.
+`limit_conn_zone`: Creates a shared memory zone named `addr` of 10 megabytes to track the number of simultaneous connections for each client IP.
 
-***`limit_req and limit_conn:`**
+***`limit_req` and `limit_conn:`**
 
 These directives apply the rate and connection limits defined above:
 
@@ -471,7 +466,37 @@ limit_conn addr 10;
 ```
 
 `limit_req`: Enforces the rate limit from the `one` zone, allowing a burst of up to 5 extra requests.
+
 `limit_conn`: Limits each client IP to a maximum of 10 simultaneous connections in the `addr` zone.
+
+### Running the Phase 4 Demo 
+
+To demonstrate load shedding using rate and connection limiting, run the containers in this directory with
+
+```sh
+cd 04-rate-limiting-and-load-shedding
+docker compose down -v && \
+docker compose build && \
+docker compose up
+```
+
+You can test this by opening a browser to `http://localhost/search?prefix=Intro`.
+
+### Observing rate limiting
+
+Refresh the page and notice that it will hang when you make more than one request per second.  Make many consecutive requests by reloading rapidly, and notice that nginx will server a 503 Service Unavailable for a brief period of time.
+
+### Observing concurrent connection limiting 
+
+To observe concurrent connection limits, you can use a tool like `ab`:
+
+```sh
+$ ab -n 20 -c 20 http://localhost/search\?prefix\=Intro
+```
+
+When making 20 concurrent connections, you'll notice from the logs that nginx rejects all concurrent connections above the configured limit.
+
+It's may be case that there is some interaction between the rate limiting rule and the concurrent connection limit.  If you wish to isolate the connection limiting rule to observe it more easily, you can comment out the `limit_req` directive temporarily.
 
 ## Phase 5: Adding a Web Application Firewall (WAF)
 
@@ -480,7 +505,7 @@ This phase incorporates ModSecurity, a powerful open-source Web Application Fire
 - Integrates ModSecurity with Nginx
 - Configures basic ModSecurity rules to protect against common web attacks
 
-### Key Components:
+### Key Updates:
 
 1. **ModSecurity Integration**: 
    - The Nginx Dockerfile has been updated to include ModSecurity compilation and installation. This process is a bit complex, as at the time of writing, it includes building the project from source.  For this demo, we're using a Debian Bullseye Slim base image.
