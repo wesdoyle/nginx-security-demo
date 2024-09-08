@@ -96,8 +96,9 @@ When the containers are ready, you can query the API on `localhost` using a brow
 
 **However, the API currently exposes a SQL injection vulnerability. 🚨**
 
-After exploring the API and discovering that it is very poorly designed, a malicious actor can exploit the vulnerabilty by constructing a query to return metadata about the database.  After some experimentation, they graft a PostgreSQL `VERSION()` call using a union in order to conform to the inferred shape of the table the application is querying: 
-(`http://localhost/search?prefix=Intro' UNION SELECT 1, VERSION(), NULL, NULL--`):
+After exploring the API and discovering that it is very poorly designed, a malicious actor can exploit the vulnerabilty by constructing a query to return metadata about the database.  After some experimentation, they graft a PostgreSQL `VERSION()` call using a union in order to conform to the inferred shape of the table the application is querying.
+
+You can confirm this using your browser or other client. For example, visit `http://localhost/search?prefix=Intro' UNION SELECT 1, VERSION(), NULL, NULL--` or invoke the request with `curl`:
 
 ```sh
 $ curl http://localhost/search\?prefix\=Intro%27%20UNION%20SELECT%201,%20VERSION\(\),%20NULL,%20NULL-- | jq
