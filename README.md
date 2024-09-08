@@ -293,6 +293,124 @@ This phase introduces HTTPS:
 
 This phase demonstrates the importance of encrypted communications in web security.
 
+If you run the Phase 1 or Phase 2 stack, you'll notice that all traffic is routed to the API through nginx over HTTP.  You'll notice that if you inspect network traffic on the loopback interface, it's completely unencrypted.  You can easily read information about the HTTP request and response events, including the entire contents of the payload.
+
+On macOS, you can use a tool like `tcpdump` to demonstrate this:
+
+```sh
+$ sudo tcpdump -i lo0 -nvA 'tcp and port 80 and host 127.0.0.1'
+```
+
+visiting `http://localhost/search?prefix=Intro` in your browser, you'll see something like this written to your terminal by tcpdump (truncated for brevity):
+
+```sh
+tcpdump: listening on lo0, link-type NULL (BSD loopback), snapshot length 524288 bytes
+22:49:15.304239 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 570, bad cksum 0 (->3abc)!)
+    127.0.0.1.60065 > 127.0.0.1.80: Flags [P.], cksum 0x002f 
+
+Host: localhost
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br, zstd
+
+
+22:49:15.304318 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 52, bad cksum 0 (->3cc2)!)
+proto TCP (6), length 526, bad cksum 0 (->3ae8)!)
+    127.0.0.1.80 > 127.0.0.1.60065: Flags [P.], cksum 0x0003 (incorrect -> 0xd31a), seq 1:475, ack 518, win 6346, options [nop,nop,TS val 2002467784 ecr 1157802627], length 474: HTTP, length: 474
+        HTTP/1.1 200 OK
+        Server: nginx/1.27.1
+        Date: Sun, 08 Sep 2024 03:49:15 GMT
+        Content-Type: application/json
+        Content-Length: 319
+        Connection: keep-alive
+
+        [{"id":1,"title":"Introduction to Philosophy","description":"Explore fundamental questions about existence, knowledge, and ethics.","instructor":"Dr. Anne Johnson"},{"id":4,"title":"Introduction to Psychology","description":"Learn the basics of human behavior, cognition, and emotion.","instructor":"Dr. Rachel Green"}] [|http]
+w[;.E...HTTP/1.1 200 OK
+... 
+```
+
+As you can see, traffic sent over HTTP is insecure.  To encrypt this data, we update our Ngnix server to use an SSL cert.  For demonstration purposes, we use a self-signed cert, generated locally using `openssl`:
+
+```sh
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout nginx-selfsigned.key \
+  -out nginx-selfsigned.crt \
+  -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+```
+
+In our `nginx.conf` configuration, it's very simple to set up SSL using this key and cert.  First, we create a new server block to listen on port `443`, the default HTTPS port. We redirect traffic from `80` to `443`:
+
+```nginx
+  # nginx.conf 
+
+  # ...
+
+  # Redirect HTTP traffic to HTTPS
+  server {
+    listen 80;
+    server_name localhost;
+    return 301 https://$server_name$request_uri;
+  }
+
+  # HTTPS server config
+  server {
+    listen 443 ssl;
+    server_name localhost;
+  # ...
+
+  }
+```
+
+In our new HTTPS server block, we use the `ssl_certificate` and `ssl_certificate_key` directives to point the server to the cert and key we generated.
+
+```nginx
+    # SSL certificate config
+    ssl_certificate /etc/nginx/ssl/nginx-selfsigned.crt;
+    ssl_certificate_key /etc/nginx/ssl/nginx-selfsigned.key;
+
+    # SSL protocol and cipher config - only allow TLS 1.2 and 1.3
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256 # additional ciphers... 
+```
+
+Now, with containers in this and subsequent phases running, we can access API data using HTTPS, e.g. at `http://localhost/search?prefix=Intro`
+
+In fact, we can use `tcpdump` again, modifying the command slightly to listen on port `443` instead of `80`. We'll also ignore checksum validation with `-K`, since we're working with the loopback interface (`lo0`) - these checks will typically fail when inspecting loopback traffic, as it's a special interface. There are lower-level reasons for this that aren't relevant to this demonstration; leaving the warnings in the output just add noise to what we're trying to observe.
+
+```sh
+$ sudo tcpdump -i lo0 -nvAK 'tcp and port 443 and host 127.0.0.1'
+```
+
+visiting `https://localhost/search?prefix=Intro` in your browser, you'll see something like this written to your terminal by tcpdump (truncated for brevity):
+
+
+```sh
+tcpdump: listening on lo0, link-type NULL (BSD loopback), snapshot length 524288 bytes
+23:06:29.748692 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 592)
+    127.0.0.1.60147 > 127.0.0.1.443: Flags [P.], seq 1385642167:1385642707, ack 117939963, win 6337, options [nop,nop,TS val 1445835693 ecr 384877254], length 540
+E..P..@.@...............R.8..........E.....
+V-............=.#.7.N.^....(. z..4...8.C.n8.1.Zy[.C.YS..j...?.I..
+l/.#[._F.4...o../6....'..Y.bH.^m....t.u-.....mt.J=.%`......!a...$...`...<......Eh...x,8[r.S......) .}....."..zF.......(...      ...^W.-g....."....D.A\,.^....-A..*........
+.).AUG...S.......P3..R..t.......|
+.*d.#............... ....:...K.fp4..%.0#..s.?J1_...w..Kp....~(.V......o...ko..o..y...'/..D.].<>..4
+o.otX........,de.V......v<...n......[P.E.-(...y?Xb...........9.mK\W....fo%................
+ 1.......m..ma$..`2u....+.-.y.u.8.._.....d\ks..jj.....6..?KFk.G.LJ.%.-..z...;..].......s..5F
+23:06:29.748778 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 52)
+    127.0.0.1.443 > 127.0.0.1.60147: Flags [.], ack 540, win 6343, options [nop,nop,TS val 384885596 ecr 1445835693], length 0
+E..4..@.@...................R.:......(.....
+...\V-..
+23:06:29.752691 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 548)
+    127.0.0.1.443 > 127.0.0.1.60147: Flags [P.], seq 1:497, ack 540, win 6343, options [nop,nop,TS val 384885600 ecr 1445835693], length 496
+E..$..@.@...................R.:............
+...`V-........Iz...5.B.zM.CV.Ij..c7l.5.?6.."...l...h.4....Ra....^u........^.==....9.@.......P.Wg.d...._G..a........QeJncl..CT..NTO...F......!f-14"6.......9.q...R....GY..#.k.hH.r..V..#_....g.CVt`.$..}.lg.{G...E..,S...j.b........>.......l-.N.}...?..\.i~u...5..mZ.5...8Wv.9+.2?.P.....`.._..+..](<.....|..`Vi,..r.`P..L(......cW ...W.!O.......V...y|.....s.....>D.........G...k.    ...>.|SGT.l2-.  F....8....dCkDxQ\...>....$.P.......Bv......^.......=....u.MSr..8.F..W..~vz+t.....K.\h[[....4..K.K.]..8`.;.?.Mb...g.f
+23:06:29.752771 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 52)
+    127.0.0.1.60147 > 127.0.0.1.443: Flags [.], ack 497, win 6329, options [nop,nop,TS val 1445835697 ecr 384885600], length 0
+E..4..@.@...............R.:..........(.....
+V-.....`
+```
+
 ## Phase 4: Rate Limiting, Load Shedding
 
 Building on the previous phase, this directory adds:
