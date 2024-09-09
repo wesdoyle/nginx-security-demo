@@ -518,7 +518,7 @@ You can test this by opening a browser to `http://localhost/search?prefix=Intro`
 
 ### Observing rate limiting
 
-Refresh the page and notice that it will hang when you make more than one request per second.  Make many consecutive requests by reloading rapidly, and notice that nginx will server a 503 Service Unavailable for a brief period of time. 🙅
+Refresh the page and notice that it will hang when you make more than one request per second.  Make many consecutive requests by reloading rapidly, and notice that nginx will serve a 503 Service Unavailable for a brief period of time. 🙅
 
 ### Observing concurrent connection limiting 
 
