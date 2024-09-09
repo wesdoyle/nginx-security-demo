@@ -319,7 +319,7 @@ Try again to run a SQL injection query against the API:
 
 (`http://localhost/search?prefix=Intro' UNION SELECT id, CONCAT(first_name, last_name), email, CAST(date_of_birth as VARCHAR) FROM students--`)
 
-**Notice now that the request will not be handled properly, as the code expects a valid, type-checked input, rather than an arbitrary string.**
+**Notice now that the request will fail, as the code expects a valid, type-checked input, rather than an arbitrary string.**
 
 We've significantly improved application-level security by parameterizing our SQL queries in the Rust API.  However, anyone with access to the server can still inspect unencrypted network traffic between web clients and the Nginx server.  In the next phase, we'll encrypt this traffic with TLS.
 
